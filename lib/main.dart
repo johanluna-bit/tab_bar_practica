@@ -1,38 +1,75 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(useMaterial3: true),
-      home: const TabBarExample(),
+      debugShowCheckedModeBanner: false,
+      home: HomeScreen(),
     );
   }
 }
 
-class TabBarExample extends StatefulWidget {
-  const TabBarExample({super.key});
-
+class HomeScreen extends StatefulWidget {
   @override
-  State<TabBarExample> createState() => _TabBarExampleState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
-/// [AnimationController]s can be created with `vsync: this` because of
-/// [TickerProviderStateMixin].
-class _TabBarExampleState extends State<TabBarExample>
-    with TickerProviderStateMixin {
-  late final TabController _tabController;
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late ValueNotifier<String> _imageUrlNotifier;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _imageUrlNotifier = ValueNotifier<String>(_generateRandomImageUrl());
+
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        _imageUrlNotifier.value = _generateRandomImageUrl();
+      }
+    });
+  }
+
+  String _generateRandomImageUrl() {
+    final random = Random();
+    final widthAnsHeight = 100 + random.nextInt(100);  // Random width between 200 and 500
+    return 'https://picsum.photos/$widthAnsHeight';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(100),
+      appBar: AppBar(
+        title: Text('TabBar Images App'),
+          centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.image), text: 'Random 1'),
+            Tab(icon: Icon(Icons.image), text: 'Random 2'),
+            Tab(icon: Icon(Icons.image), text: 'Random 3'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+
+        controller: _tabController,
+        children: List.generate(3, (index) => ValueListenableBuilder<String>(
+          valueListenable: _imageUrlNotifier,
+          builder: (context, imageUrl, child) {
+            return ImageScreen(imageUrl: imageUrl);
+          },
+        )),
+      ),
+    );
   }
 
   @override
@@ -40,53 +77,20 @@ class _TabBarExampleState extends State<TabBarExample>
     _tabController.dispose();
     super.dispose();
   }
+}
+
+class ImageScreen extends StatelessWidget {
+  final String imageUrl;
+
+  ImageScreen({required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:Colors.cyan,
-      appBar: AppBar(
-        title: const Text('APIs para Imagenes'),
-        centerTitle: true,
-
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const <Widget>[
-            Tab(
-              icon: Icon(Icons.adb),
-              child: Text("Paul Jarvis"),
-            ),
-            Tab(
-              icon: Icon(Icons.adb),
-              child: Text("Random"),
-            ),
-            Tab(
-              icon: Icon(Icons.ac_unit),
-              child: Text("Snow"),
-
-            ),
-          ],
-        ),
-      ),
-      body:
-      TabBarView(
-        controller: _tabController,
-        children:  <Widget>[
-
-          Center(
-            child: Image.network('https://picsum.photos/400/400'),
-          ),
-          Center(
-            child: Image.network('https://picsum.photos/400/400'),
-          ),
-          Center(
-            child: Image.network('https://picsum.photos/400/400'),
-
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onHorizontalDragEnd: (_) {
+        // This can trigger any action if needed, for now it does nothing
+      },
+      child: Image.network(imageUrl, fit: BoxFit.scaleDown),
     );
   }
 }
-
-
